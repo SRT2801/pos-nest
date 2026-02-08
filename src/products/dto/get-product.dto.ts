@@ -6,6 +6,10 @@ export class GetProductsQueryDto {
   category_id?: number;
 
   @IsOptional()
-  @IsNumberString({}, { message: 'The page must be a number' })
-  page?: number;
+  @IsNumberString({}, { message: 'the quantity must be a number' })
+  take?: number;
+
+  @IsOptional()
+  @IsNumberString({}, { message: 'the quantity must be a number' })
+  skip?: number;
 }
