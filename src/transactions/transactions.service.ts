@@ -13,6 +13,7 @@ import {
 import { Between, FindManyOptions, Repository } from 'typeorm';
 import { Product } from 'src/products/entities/product.entity';
 import { endOfDay, isValid, parseISO, startOfDay } from 'date-fns';
+import { CouponsService } from 'src/coupons/coupons.service';
 
 @Injectable()
 export class TransactionsService {
@@ -23,16 +24,29 @@ export class TransactionsService {
     private readonly transactionContentsRepository: Repository<TransactionContents>,
     @InjectRepository(Product)
     private readonly productRepository: Repository<Product>,
+    private readonly couponsService: CouponsService,
   ) {}
 
   async create(createTransactionDto: CreateTransactionDto) {
     await this.productRepository.manager.transaction(
       async (transactionEntityManager) => {
         const transaction = new Transaction();
-        transaction.total = createTransactionDto.contents.reduce(
+        const total = createTransactionDto.contents.reduce(
           (total, item) => total + item.price * item.quantity,
           0,
         );
+        transaction.total = total;
+        transaction.discount = 0;
+
+        if (createTransactionDto.coupon) {
+          const coupon = await this.couponsService.applyCoupon(
+            createTransactionDto.coupon,
+          );
+          const discount = (coupon.percentage / 100) * total;
+          transaction.discount = discount;
+          transaction.coupon = coupon.name;
+          transaction.total = total - discount;
+        }
 
         await transactionEntityManager.save(transaction);
 
@@ -72,34 +86,31 @@ export class TransactionsService {
   }
 
   findAll(transactionDate?: string) {
-
-    const options : FindManyOptions<Transaction> = {
+    const options: FindManyOptions<Transaction> = {
       relations: {
         contents: true,
       },
-    }
+    };
 
     if (transactionDate) {
       const date = parseISO(transactionDate);
-      if(!isValid(date)) {
+      if (!isValid(date)) {
         throw new BadRequestException('Invalid date format');
       }
 
       const start = startOfDay(date);
-      const end =  endOfDay(date);
-      
-      
+      const end = endOfDay(date);
+
       options.where = {
         transactionDate: Between(start, end),
-      }
-
+      };
     }
 
     return this.transactionRepository.find(options);
   }
 
   async findOne(id: number) {
-   const transaction = await this.transactionRepository.findOne({
+    const transaction = await this.transactionRepository.findOne({
       where: { id },
       relations: {
         contents: true,
@@ -112,7 +123,6 @@ export class TransactionsService {
     return transaction;
   }
 
-  
   async remove(id: number) {
     const transaction = await this.transactionRepository.findOne({
       where: { id },
@@ -126,13 +136,18 @@ export class TransactionsService {
     }
 
     for (const contents of transaction.contents) {
-      const product = await this.productRepository.findOneBy({id: contents.product.id})
+      const product = await this.productRepository.findOneBy({
+        id: contents.product.id,
+      });
       if (!product) {
-        throw new NotFoundException(`Product with ID ${contents.product.id} not found`);
+        throw new NotFoundException(
+          `Product with ID ${contents.product.id} not found`,
+        );
       }
       product.inventory += contents.quantity;
       await this.productRepository.save(product);
-      const transactionContents = await this.transactionContentsRepository.findOneBy({id: contents.id})
+      const transactionContents =
+        await this.transactionContentsRepository.findOneBy({ id: contents.id });
       if (transactionContents) {
         await this.transactionContentsRepository.remove(transactionContents);
       }
