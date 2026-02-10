@@ -3,7 +3,7 @@ import { UpdateProductDto } from './dto/update-product.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Product } from './entities/product.entity';
 import { FindManyOptions, Repository } from 'typeorm';
-import { Category } from 'src/categories/entities/category.entity';
+import { Category } from '../categories/entities/category.entity';
 import { NotFoundException } from '@nestjs/common';
 
 export class ProductsService {
