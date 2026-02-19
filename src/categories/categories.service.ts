@@ -21,13 +21,19 @@ export class CategoriesService {
   }
 
   async findOne(id: number, products?: boolean) {
-
     const options: FindManyOptions<Category> = {
       where: { id },
     };
 
     if (products) {
-      options.relations = ['products'];
+      options.relations = {
+        products: true,
+      },
+      options.order ={
+        products: {
+          id: 'ASC',
+        },
+      }
     }
 
     const category = await this.categoryRepository.findOne(options);
@@ -45,6 +51,6 @@ export class CategoriesService {
 
   async remove(id: number) {
     const category = await this.findOne(id);
-    return await this.categoryRepository.remove(category);  
+    return await this.categoryRepository.remove(category);
   }
 }
