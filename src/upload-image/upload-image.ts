@@ -1,13 +1,11 @@
-import { v2 as cloudinary } from "cloudinary";
+import { createClient } from '@supabase/supabase-js';
 
-export const UploadImageProvider = {
-    provide: 'CLOUDINARY',
-    useFactory: () => {
-        return cloudinary.config({
-            cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-            api_key: process.env.CLOUDINARY_API_KEY,
-            api_secret: process.env.CLOUDINARY_API_SECRET,
-        });
-    }
-
-}
+export const SupabaseProvider = {
+  provide: 'SUPABASE',
+  useFactory: () => {
+    return createClient(
+      process.env.SUPABASE_URL as string,
+      process.env.SUPABASE_SERVICE_ROLE_KEY as string,
+    );
+  },
+};
