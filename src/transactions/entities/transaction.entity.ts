@@ -21,7 +21,7 @@ export class Transaction {
   @Column({ type: 'decimal', default: 0 })
   discount: number;
 
-  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP(6)' })
+  @Column({ type: 'timestamp without time zone' })
   transactionDate: Date;
 
   @OneToMany(

@@ -36,6 +36,7 @@ export class TransactionsService {
         );
         transaction.total = total;
         transaction.discount = 0;
+        transaction.transactionDate = new Date();
 
         if (createTransactionDto.coupon) {
           const coupon = await this.couponsService.applyCoupon(
