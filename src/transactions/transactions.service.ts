@@ -26,7 +26,7 @@ export class TransactionsService {
     private readonly couponsService: CouponsService,
   ) {}
 
-  async create(createTransactionDto: CreateTransactionDto) {
+  async create(createTransactionDto: CreateTransactionDto, userId: string) {
     await this.productRepository.manager.transaction(
       async (transactionEntityManager) => {
         const transaction = new Transaction();
@@ -37,6 +37,7 @@ export class TransactionsService {
         transaction.total = total;
         transaction.discount = 0;
         transaction.transactionDate = new Date();
+        transaction.userId = userId;
 
         if (createTransactionDto.coupon) {
           const coupon = await this.couponsService.applyCoupon(
@@ -85,7 +86,7 @@ export class TransactionsService {
     return { message: 'sale successfully created' };
   }
 
-  findAll(transactionDate?: string) {
+  findAll(transactionDate?: string, user?: { id: string; role: string }) {
     const options: FindManyOptions<Transaction> = {
       relations: {
         contents: true,
@@ -106,10 +107,18 @@ export class TransactionsService {
       };
     }
 
+   
+    if (user && user.role !== 'admin') {
+      options.where = {
+        ...options.where,
+        userId: user.id,
+      };
+    }
+
     return this.transactionRepository.find(options);
   }
 
-  async findOne(id: number) {
+  async findOne(id: number, user?: { id: string; role: string }) {
     const transaction = await this.transactionRepository.findOne({
       where: { id },
       relations: {
@@ -120,6 +129,12 @@ export class TransactionsService {
     if (!transaction) {
       throw new NotFoundException(`Transaction with ID ${id} not found`);
     }
+
+   
+    if (user && user.role !== 'admin' && transaction.userId !== user.id) {
+      throw new NotFoundException(`Transaction with ID ${id} not found`);
+    }
+
     return transaction;
   }
 
