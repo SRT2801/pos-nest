@@ -12,6 +12,9 @@ export class Transaction {
   @PrimaryGeneratedColumn()
   id: number;
 
+  @Column({ type: 'uuid', nullable: true })
+  userId: string;
+
   @Column('decimal')
   total: number;
 
