@@ -10,7 +10,7 @@ export class Product {
 
   @Column({
     type: 'varchar',
-    length: 120,
+    length: 255,
     nullable: true,
     default: 'default.svg',
   })
