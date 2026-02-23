@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { APP_GUARD } from '@nestjs/core';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { CategoriesModule } from './categories/categories.module';
@@ -9,7 +10,9 @@ import { ProductsModule } from './products/products.module';
 import { TransactionsModule } from './transactions/transactions.module';
 import { CouponsModule } from './coupons/coupons.module';
 import { UploadImageModule } from './upload-image/upload-image.module';
-
+import { AuthModule } from './auth/auth.module';
+import { SupabaseAuthGuard } from './auth/guards/supabase-auth.guard';
+import { RolesGuard } from './auth/guards/roles.guard';
 
 @Module({
   imports: [
@@ -20,6 +23,7 @@ import { UploadImageModule } from './upload-image/upload-image.module';
       useFactory: typeOrmConfig,
       inject: [ConfigService],
     }),
+    AuthModule,
     CategoriesModule,
     ProductsModule,
     TransactionsModule,
@@ -27,6 +31,16 @@ import { UploadImageModule } from './upload-image/upload-image.module';
     UploadImageModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: APP_GUARD,
+      useClass: SupabaseAuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: RolesGuard,
+    },
+  ],
 })
 export class AppModule {}
