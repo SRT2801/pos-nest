@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
 import { UploadImageService } from './upload-image.service';
-import { UploadImageProvider } from './upload-image';
+import { SupabaseProvider } from './upload-image';
 
 @Module({
-  providers: [UploadImageService, UploadImageProvider],
-  exports: [UploadImageService, UploadImageProvider],
+  providers: [UploadImageService, SupabaseProvider],
+  exports: [UploadImageService, SupabaseProvider],
 })
 export class UploadImageModule {}
