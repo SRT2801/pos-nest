@@ -13,6 +13,8 @@ import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { IdValidationPipe } from '../common/pipes/id-validation/id-validation.pipe';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { Role } from '../auth/enums/role.enum';
+import { AuthUser } from '../auth/interfaces/auth-user.interface';
 
 @Controller('transactions')
 export class TransactionsController {
@@ -29,7 +31,7 @@ export class TransactionsController {
   @Get()
   findAll(
     @Query('transactionDate') transactionDate: string,
-    @CurrentUser() user: { id: string; role: string },
+    @CurrentUser() user: AuthUser,
   ) {
     return this.transactionsService.findAll(transactionDate, user);
   }
@@ -37,13 +39,13 @@ export class TransactionsController {
   @Get(':id')
   findOne(
     @Param('id', IdValidationPipe) id: string,
-    @CurrentUser() user: { id: string; role: string },
+    @CurrentUser() user: AuthUser,
   ) {
     return this.transactionsService.findOne(+id, user);
   }
 
   @Delete(':id')
-  @Roles('admin')
+  @Roles(Role.ADMIN)
   remove(@Param('id', IdValidationPipe) id: string) {
     return this.transactionsService.remove(+id);
   }

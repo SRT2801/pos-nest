@@ -15,31 +15,32 @@ import { UpdateCouponDto } from './dto/update-coupon.dto';
 import { IdValidationPipe } from '../common/pipes/id-validation/id-validation.pipe';
 import { ApplyCouponDto } from './dto/apply-coupon.dto';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { Role } from '../auth/enums/role.enum';
 
 @Controller('coupons')
 export class CouponsController {
   constructor(private readonly couponsService: CouponsService) {}
 
   @Post()
-  @Roles('admin')
+  @Roles(Role.ADMIN)
   create(@Body() createCouponDto: CreateCouponDto) {
     return this.couponsService.create(createCouponDto);
   }
 
   @Get()
-  @Roles('admin')
+  @Roles(Role.ADMIN)
   findAll() {
     return this.couponsService.findAll();
   }
 
   @Get(':id')
-  @Roles('admin')
+  @Roles(Role.ADMIN)
   findOne(@Param('id', IdValidationPipe) id: string) {
     return this.couponsService.findOne(+id);
   }
 
   @Patch(':id')
-  @Roles('admin')
+  @Roles(Role.ADMIN)
   update(
     @Param('id', IdValidationPipe) id: string,
     @Body() updateCouponDto: UpdateCouponDto,
@@ -48,7 +49,7 @@ export class CouponsController {
   }
 
   @Delete(':id')
-  @Roles('admin')
+  @Roles(Role.ADMIN)
   remove(@Param('id') id: string) {
     return this.couponsService.remove(+id);
   }

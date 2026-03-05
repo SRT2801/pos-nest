@@ -15,13 +15,14 @@ import { UpdateCategoryDto } from './dto/update-category.dto';
 import { IdValidationPipe } from '../common/pipes/id-validation/id-validation.pipe';
 import { Public } from '../auth/decorators/public.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { Role } from '../auth/enums/role.enum';
 
 @Controller('categories')
 export class CategoriesController {
   constructor(private readonly categoriesService: CategoriesService) {}
 
   @Post()
-  @Roles('admin')
+  @Roles(Role.ADMIN)
   create(@Body() createCategoryDto: CreateCategoryDto) {
     return this.categoriesService.create(createCategoryDto);
   }
@@ -42,7 +43,7 @@ export class CategoriesController {
   }
 
   @Patch(':id')
-  @Roles('admin')
+  @Roles(Role.ADMIN)
   update(
     @Param('id', IdValidationPipe) id: string,
     @Body() updateCategoryDto: UpdateCategoryDto,
@@ -51,7 +52,7 @@ export class CategoriesController {
   }
 
   @Delete(':id')
-  @Roles('admin')
+  @Roles(Role.ADMIN)
   remove(@Param('id', IdValidationPipe) id: string) {
     return this.categoriesService.remove(+id);
   }

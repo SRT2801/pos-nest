@@ -20,6 +20,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { UploadImageService } from 'src/upload-image/upload-image.service';
 import { Public } from '../auth/decorators/public.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { Role } from '../auth/enums/role.enum';
 
 @Controller('products')
 export class ProductsController {
@@ -29,7 +30,7 @@ export class ProductsController {
   ) {}
 
   @Post()
-  @Roles('admin')
+  @Roles(Role.ADMIN)
   create(@Body() createProductDto: CreateProductDto) {
     return this.productsService.create(createProductDto);
   }
@@ -51,7 +52,7 @@ export class ProductsController {
   }
 
   @Patch(':id')
-  @Roles('admin')
+  @Roles(Role.ADMIN)
   update(
     @Param('id', IdValidationPipe) id: string,
     @Body() updateProductDto: UpdateProductDto,
@@ -60,13 +61,13 @@ export class ProductsController {
   }
 
   @Delete(':id')
-  @Roles('admin')
+  @Roles(Role.ADMIN)
   remove(@Param('id', IdValidationPipe) id: string) {
     return this.productsService.remove(+id);
   }
 
   @Post('upload-image')
-  @Roles('admin')
+  @Roles(Role.ADMIN)
   @UseInterceptors(FileInterceptor('file'))
   uploadImage(@UploadedFile() file: Express.Multer.File) {
     if (!file) {

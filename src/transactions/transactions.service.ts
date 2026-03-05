@@ -13,6 +13,8 @@ import { Between, FindManyOptions, Repository } from 'typeorm';
 import { Product } from '../products/entities/product.entity';
 import { endOfDay, isValid, parseISO, startOfDay } from 'date-fns';
 import { CouponsService } from '../coupons/coupons.service';
+import { AuthUser } from '../auth/interfaces/auth-user.interface';
+import { Role } from '../auth/enums/role.enum';
 
 @Injectable()
 export class TransactionsService {
@@ -86,7 +88,7 @@ export class TransactionsService {
     return { message: 'sale successfully created' };
   }
 
-  findAll(transactionDate?: string, user?: { id: string; role: string }) {
+  findAll(transactionDate?: string, user?: AuthUser) {
     const options: FindManyOptions<Transaction> = {
       relations: {
         contents: true,
@@ -107,8 +109,7 @@ export class TransactionsService {
       };
     }
 
-   
-    if (user && user.role !== 'admin') {
+    if (user && user.role !== Role.ADMIN) {
       options.where = {
         ...options.where,
         userId: user.id,
@@ -118,7 +119,7 @@ export class TransactionsService {
     return this.transactionRepository.find(options);
   }
 
-  async findOne(id: number, user?: { id: string; role: string }) {
+  async findOne(id: number, user?: AuthUser) {
     const transaction = await this.transactionRepository.findOne({
       where: { id },
       relations: {
@@ -130,8 +131,7 @@ export class TransactionsService {
       throw new NotFoundException(`Transaction with ID ${id} not found`);
     }
 
-   
-    if (user && user.role !== 'admin' && transaction.userId !== user.id) {
+    if (user && user.role !== Role.ADMIN && transaction.userId !== user.id) {
       throw new NotFoundException(`Transaction with ID ${id} not found`);
     }
 
