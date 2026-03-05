@@ -5,6 +5,7 @@ import { SignInDto } from './dto/sign-in.dto';
 import { CreateAdminDto } from './dto/create-admin.dto';
 import { Public } from './decorators/public.decorator';
 import { Roles } from './decorators/roles.decorator';
+import { Role } from './enums/role.enum';
 
 @Controller('auth')
 export class AuthController {
@@ -23,7 +24,7 @@ export class AuthController {
   }
 
   @Post('create-admin')
-  @Roles('admin')
+  @Roles(Role.ADMIN)
   createAdmin(@Body() createAdminDto: CreateAdminDto) {
     return this.authService.createAdmin(createAdminDto);
   }
