@@ -8,6 +8,8 @@ import {
 import { Reflector } from '@nestjs/core';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
+import { Role } from '../enums/role.enum';
+import { AuthUser } from '../interfaces/auth-user.interface';
 
 @Injectable()
 export class SupabaseAuthGuard implements CanActivate {
@@ -43,13 +45,15 @@ export class SupabaseAuthGuard implements CanActivate {
         throw new UnauthorizedException('Invalid or expired token');
       }
 
-      request.user = {
+      const authUser: AuthUser = {
         id: user.id,
-        email: user.email,
-        role: user.app_metadata?.role ?? 'user',
+        email: user.email!,
+        role: (user.app_metadata?.role as Role) ?? Role.USER,
         app_metadata: user.app_metadata,
         user_metadata: user.user_metadata,
       };
+
+      request.user = authUser;
 
       return true;
     } catch (error) {
