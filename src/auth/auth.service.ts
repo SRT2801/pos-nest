@@ -8,6 +8,7 @@ import { SupabaseClient } from '@supabase/supabase-js';
 import { SignUpDto } from './dto/sign-up.dto';
 import { SignInDto } from './dto/sign-in.dto';
 import { CreateAdminDto } from './dto/create-admin.dto';
+import { Role } from './enums/role.enum';
 
 @Injectable()
 export class AuthService {
@@ -16,27 +17,11 @@ export class AuthService {
   ) {}
 
   async signUp(signUpDto: SignUpDto) {
-    const { email, password } = signUpDto;
+    return this.createUser(signUpDto, Role.USER);
+  }
 
-    const { data, error } = await this.supabase.auth.admin.createUser({
-      email,
-      password,
-      app_metadata: { role: 'user' },
-      email_confirm: true,
-    });
-
-    if (error) {
-      throw new BadRequestException(error.message);
-    }
-
-    return {
-      message: 'User created successfully',
-      user: {
-        id: data.user.id,
-        email: data.user.email,
-        role: data.user.app_metadata?.role,
-      },
-    };
+  async createAdmin(createAdminDto: CreateAdminDto) {
+    return this.createUser(createAdminDto, Role.ADMIN);
   }
 
   async signIn(signInDto: SignInDto) {
@@ -64,13 +49,16 @@ export class AuthService {
     };
   }
 
-  async createAdmin(createAdminDto: CreateAdminDto) {
-    const { email, password } = createAdminDto;
+  private async createUser(
+    credentials: { email: string; password: string },
+    role: Role,
+  ) {
+    const { email, password } = credentials;
 
     const { data, error } = await this.supabase.auth.admin.createUser({
       email,
       password,
-      app_metadata: { role: 'admin' },
+      app_metadata: { role },
       email_confirm: true,
     });
 
@@ -79,7 +67,10 @@ export class AuthService {
     }
 
     return {
-      message: 'Admin user created successfully',
+      message:
+        role === Role.ADMIN
+          ? 'Admin user created successfully'
+          : 'User created successfully',
       user: {
         id: data.user.id,
         email: data.user.email,
