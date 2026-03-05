@@ -1,12 +1,3 @@
-import { IsEmail, IsNotEmpty, IsString, MinLength } from 'class-validator';
+import { AuthCredentialsDto } from './auth-credentials.dto';
 
-export class CreateAdminDto {
-  @IsEmail()
-  @IsNotEmpty()
-  email: string;
-
-  @IsString()
-  @IsNotEmpty()
-  @MinLength(6)
-  password: string;
-}
+export class CreateAdminDto extends AuthCredentialsDto {}
