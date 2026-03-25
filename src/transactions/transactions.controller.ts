@@ -11,9 +11,9 @@ import {
 import { TransactionsService } from './transactions.service';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { IdValidationPipe } from '../common/pipes/id-validation/id-validation.pipe';
-import { Roles } from '../auth/decorators/roles.decorator';
+import { RequirePermissions } from '../auth/decorators/permissions.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { Role } from '../auth/enums/role.enum';
+import { Permission } from '../auth/enums/permission.enum';
 import { AuthUser } from '../auth/interfaces/auth-user.interface';
 
 @Controller('transactions')
@@ -45,7 +45,7 @@ export class TransactionsController {
   }
 
   @Delete(':id')
-  @Roles(Role.ADMIN)
+  @RequirePermissions(Permission.DELETE_TRANSACTION)
   remove(@Param('id', IdValidationPipe) id: string) {
     return this.transactionsService.remove(+id);
   }
