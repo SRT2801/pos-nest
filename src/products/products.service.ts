@@ -1,33 +1,42 @@
-import { CreateProductDto } from './dto/create-product.dto';
-import { UpdateProductDto } from './dto/update-product.dto';
+import { CreateProductDto } from './dto/create-product.dto.js';
+import { UpdateProductDto } from './dto/update-product.dto.js';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Product } from './entities/product.entity';
+import { Product } from './entities/product.entity.js';
 import { FindManyOptions, Repository } from 'typeorm';
-import { Category } from '../categories/entities/category.entity';
-import { NotFoundException } from '@nestjs/common';
+import { Category } from '../categories/entities/category.entity.js';
+import { TransactionContents } from '../transactions/entities/transaction.entity.js';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { StoreScopedService } from '../common/services/store-scoped.service.js';
+import { StoreContextService } from '../common/cls/store-context.service.js';
 
-export class ProductsService {
+@Injectable()
+export class ProductsService extends StoreScopedService<Product> {
   constructor(
     @InjectRepository(Product)
     private readonly productRepository: Repository<Product>,
     @InjectRepository(Category)
     private readonly categoryRepository: Repository<Category>,
-  ) {}
+    @InjectRepository(TransactionContents)
+    private readonly transactionContentsRepository: Repository<TransactionContents>,
+    storeContext: StoreContextService,
+  ) {
+    super(productRepository, storeContext);
+  }
 
   async create(createProductDto: CreateProductDto) {
+    const storeId = this.getRequiredStoreId();
     const category = await this.categoryRepository.findOneBy({
       id: createProductDto.categoryId,
+      storeId,
     });
     if (!category) {
-      let errors: string[] = [];
-      errors.push('Category not found');
-      throw new NotFoundException(errors);
+      throw new NotFoundException(['Category not found']);
     }
 
-    return this.productRepository.save({
+    return this.scopedSave({
       ...createProductDto,
       category,
-    });
+    } as Partial<Product>);
   }
 
   async findAll(categoryId: number | null, take: number, skip: number) {
@@ -36,21 +45,21 @@ export class ProductsService {
       order: { id: 'DESC' },
       take,
       skip,
+      where: { isActive: true },
     };
 
     if (categoryId) {
-      options.where = { category: { id: categoryId } };
+      options.where = { isActive: true, category: { id: categoryId } };
     }
 
-    const [products, total] =
-      await this.productRepository.findAndCount(options);
+    const [products, total] = await this.scopedFindAndCount(options);
 
     return { products, total };
   }
 
   async findOne(id: number) {
-    const product = await this.productRepository.findOne({
-      where: { id },
+    const product = await this.scopedFindOne({
+      where: { id, isActive: true },
       relations: { category: true },
     });
 
@@ -65,13 +74,13 @@ export class ProductsService {
     Object.assign(product, updateProductDto);
 
     if (updateProductDto.categoryId) {
+      const storeId = this.getRequiredStoreId();
       const category = await this.categoryRepository.findOneBy({
         id: updateProductDto.categoryId,
+        storeId,
       });
       if (!category) {
-        let errors: string[] = [];
-        errors.push('Category not found');
-        throw new NotFoundException(errors);
+        throw new NotFoundException(['Category not found']);
       }
       product.category = category;
     }
@@ -81,8 +90,18 @@ export class ProductsService {
 
   async remove(id: number) {
     const product = await this.findOne(id);
-    await this.productRepository.remove(product);
 
+    const salesCount = await this.transactionContentsRepository.countBy({
+      product: { id: product.id },
+    });
+
+    if (salesCount > 0) {
+      product.isActive = false;
+      await this.productRepository.save(product);
+      return { message: 'Product archived successfully (has sales history)' };
+    }
+
+    await this.productRepository.remove(product);
     return { message: 'Product removed successfully' };
   }
 }
