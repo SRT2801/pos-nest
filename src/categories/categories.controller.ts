@@ -6,7 +6,6 @@ import {
   Patch,
   Param,
   Delete,
-  ParseIntPipe,
   Query,
 } from '@nestjs/common';
 import { CategoriesService } from './categories.service';
@@ -14,15 +13,15 @@ import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { IdValidationPipe } from '../common/pipes/id-validation/id-validation.pipe';
 import { Public } from '../auth/decorators/public.decorator';
-import { Roles } from '../auth/decorators/roles.decorator';
-import { Role } from '../auth/enums/role.enum';
+import { RequirePermissions } from '../auth/decorators/permissions.decorator';
+import { Permission } from '../auth/enums/permission.enum';
 
 @Controller('categories')
 export class CategoriesController {
   constructor(private readonly categoriesService: CategoriesService) {}
 
   @Post()
-  @Roles(Role.ADMIN)
+  @RequirePermissions(Permission.CREATE_CATEGORY)
   create(@Body() createCategoryDto: CreateCategoryDto) {
     return this.categoriesService.create(createCategoryDto);
   }
@@ -43,7 +42,7 @@ export class CategoriesController {
   }
 
   @Patch(':id')
-  @Roles(Role.ADMIN)
+  @RequirePermissions(Permission.EDIT_CATEGORY)
   update(
     @Param('id', IdValidationPipe) id: string,
     @Body() updateCategoryDto: UpdateCategoryDto,
@@ -52,7 +51,7 @@ export class CategoriesController {
   }
 
   @Delete(':id')
-  @Roles(Role.ADMIN)
+  @RequirePermissions(Permission.DELETE_CATEGORY)
   remove(@Param('id', IdValidationPipe) id: string) {
     return this.categoriesService.remove(+id);
   }
