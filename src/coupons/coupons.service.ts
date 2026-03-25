@@ -1,29 +1,37 @@
-import { BadRequestException, Injectable, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
-import { CreateCouponDto } from './dto/create-coupon.dto';
-import { UpdateCouponDto } from './dto/update-coupon.dto';
+import {
+  Injectable,
+  NotFoundException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
+import { CreateCouponDto } from './dto/create-coupon.dto.js';
+import { UpdateCouponDto } from './dto/update-coupon.dto.js';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Coupon } from './entities/coupon.entity';
-import { read } from 'fs';
+import { Coupon } from './entities/coupon.entity.js';
 import { Repository } from 'typeorm';
 import { endOfDay, isAfter } from 'date-fns';
+import { StoreScopedService } from '../common/services/store-scoped.service.js';
+import { StoreContextService } from '../common/cls/store-context.service.js';
 
 @Injectable()
-export class CouponsService {
+export class CouponsService extends StoreScopedService<Coupon> {
   constructor(
     @InjectRepository(Coupon)
     private readonly couponRepository: Repository<Coupon>,
-  ) {}
+    storeContext: StoreContextService,
+  ) {
+    super(couponRepository, storeContext);
+  }
 
   create(createCouponDto: CreateCouponDto) {
-    return this.couponRepository.save(createCouponDto);
+    return this.scopedSave(createCouponDto as Partial<Coupon>);
   }
 
   findAll() {
-    return this.couponRepository.find();
+    return this.scopedFind();
   }
 
   async findOne(id: number) {
-    const coupon = await this.couponRepository.findOneBy({ id });
+    const coupon = await this.scopedFindOne({ where: { id } });
     if (!coupon) {
       throw new NotFoundException('Coupon not found');
     }
@@ -44,7 +52,7 @@ export class CouponsService {
   }
 
   async applyCoupon(name: string) {
-    const coupon = await this.couponRepository.findOneBy({ name });
+    const coupon = await this.scopedFindOne({ where: { name } });
     if (!coupon) {
       throw new NotFoundException('Coupon not found');
     }
@@ -53,6 +61,6 @@ export class CouponsService {
     if (isAfter(currentDate, expirationDate)) {
       throw new UnprocessableEntityException('Coupon has expired');
     }
-    return { message: 'Coupon applied successfully', ...coupon}
+    return { message: 'Coupon applied successfully', ...coupon };
   }
 }
