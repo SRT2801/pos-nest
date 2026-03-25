@@ -1,13 +1,16 @@
 import { Product } from '../../products/entities/product.entity';
+import { Store } from '../../stores/entities/store.entity';
 import {
   Column,
   Entity,
+  Index,
   ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 
 @Entity()
+@Index(['storeId', 'id'])
 export class Transaction {
   @PrimaryGeneratedColumn()
   id: number;
@@ -26,6 +29,12 @@ export class Transaction {
 
   @Column({ type: 'timestamp without time zone' })
   transactionDate: Date;
+
+  @Column({ type: 'uuid' })
+  storeId: string;
+
+  @ManyToOne(() => Store, { onDelete: 'CASCADE' })
+  store: Store;
 
   @OneToMany(
     () => TransactionContents,
