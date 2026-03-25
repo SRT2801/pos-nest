@@ -3,21 +3,23 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { CreateTransactionDto } from './dto/create-transaction.dto';
+import { CreateTransactionDto } from './dto/create-transaction.dto.js';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
   Transaction,
   TransactionContents,
-} from './entities/transaction.entity';
+} from './entities/transaction.entity.js';
 import { Between, FindManyOptions, Repository } from 'typeorm';
-import { Product } from '../products/entities/product.entity';
+import { Product } from '../products/entities/product.entity.js';
 import { endOfDay, isValid, parseISO, startOfDay } from 'date-fns';
-import { CouponsService } from '../coupons/coupons.service';
-import { AuthUser } from '../auth/interfaces/auth-user.interface';
-import { Role } from '../auth/enums/role.enum';
+import { CouponsService } from '../coupons/coupons.service.js';
+import { AuthUser } from '../auth/interfaces/auth-user.interface.js';
+import { Role } from '../auth/enums/role.enum.js';
+import { StoreScopedService } from '../common/services/store-scoped.service.js';
+import { StoreContextService } from '../common/cls/store-context.service.js';
 
 @Injectable()
-export class TransactionsService {
+export class TransactionsService extends StoreScopedService<Transaction> {
   constructor(
     @InjectRepository(Transaction)
     private readonly transactionRepository: Repository<Transaction>,
@@ -26,9 +28,14 @@ export class TransactionsService {
     @InjectRepository(Product)
     private readonly productRepository: Repository<Product>,
     private readonly couponsService: CouponsService,
-  ) {}
+    storeContext: StoreContextService,
+  ) {
+    super(transactionRepository, storeContext);
+  }
 
   async create(createTransactionDto: CreateTransactionDto, userId: string) {
+    const storeId = this.getRequiredStoreId();
+
     await this.productRepository.manager.transaction(
       async (transactionEntityManager) => {
         const transaction = new Transaction();
@@ -40,6 +47,7 @@ export class TransactionsService {
         transaction.discount = 0;
         transaction.transactionDate = new Date();
         transaction.userId = userId;
+        transaction.storeId = storeId;
 
         if (createTransactionDto.coupon) {
           const coupon = await this.couponsService.applyCoupon(
@@ -56,20 +64,25 @@ export class TransactionsService {
         for (const contents of createTransactionDto.contents) {
           const product = await transactionEntityManager.findOneBy(Product, {
             id: contents.productId,
+            storeId,
           });
 
-          const errors: string[] = [];
-
           if (!product) {
-            errors.push(`Product with ID: ${contents.productId} not found`);
-            throw new NotFoundException(errors);
+            throw new NotFoundException([
+              `Product with ID: ${contents.productId} not found`,
+            ]);
+          }
+
+          if (!product.isActive) {
+            throw new BadRequestException([
+              `Product ${product.name} is no longer available`,
+            ]);
           }
 
           if (contents.quantity > product.inventory) {
-            errors.push(
+            throw new BadRequestException([
               `Insufficient inventory for the product ${product.name}`,
-            );
-            throw new BadRequestException(errors);
+            ]);
           }
 
           product.inventory -= contents.quantity;
@@ -80,7 +93,7 @@ export class TransactionsService {
           transactionContent.product = product;
           transactionContent.transaction = transaction;
 
-          await transactionEntityManager.save(transaction);
+          await transactionEntityManager.save(product);
           await transactionEntityManager.save(transactionContent);
         }
       },
@@ -109,18 +122,18 @@ export class TransactionsService {
       };
     }
 
-    if (user && user.role !== Role.ADMIN) {
+    if (user && user.role !== Role.ADMIN && user.role !== Role.OWNER) {
       options.where = {
         ...options.where,
         userId: user.id,
       };
     }
 
-    return this.transactionRepository.find(options);
+    return this.scopedFind(options);
   }
 
   async findOne(id: number, user?: AuthUser) {
-    const transaction = await this.transactionRepository.findOne({
+    const transaction = await this.scopedFindOne({
       where: { id },
       relations: {
         contents: true,
@@ -131,7 +144,12 @@ export class TransactionsService {
       throw new NotFoundException(`Transaction with ID ${id} not found`);
     }
 
-    if (user && user.role !== Role.ADMIN && transaction.userId !== user.id) {
+    if (
+      user &&
+      user.role !== Role.ADMIN &&
+      user.role !== Role.OWNER &&
+      transaction.userId !== user.id
+    ) {
       throw new NotFoundException(`Transaction with ID ${id} not found`);
     }
 
@@ -139,7 +157,7 @@ export class TransactionsService {
   }
 
   async remove(id: number) {
-    const transaction = await this.transactionRepository.findOne({
+    const transaction = await this.scopedFindOne({
       where: { id },
       relations: {
         contents: true,
