@@ -5,10 +5,10 @@ import {
   Injectable,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { ROLES_KEY } from '../decorators/roles.decorator';
-import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
-import { Role } from '../enums/role.enum';
-import { AuthUser } from '../interfaces/auth-user.interface';
+import { ROLES_KEY } from '../decorators/roles.decorator.js';
+import { IS_PUBLIC_KEY } from '../decorators/public.decorator.js';
+import { Role } from '../enums/role.enum.js';
+import { AuthUser } from '../interfaces/auth-user.interface.js';
 
 @Injectable()
 export class RolesGuard implements CanActivate {
@@ -38,6 +38,11 @@ export class RolesGuard implements CanActivate {
 
     if (!user) {
       throw new ForbiddenException('Access denied');
+    }
+
+    
+    if (user.role === Role.SUPER_ADMIN) {
+      return true;
     }
 
     const hasRole = requiredRoles.includes(user.role);
