@@ -19,8 +19,8 @@ import { IdValidationPipe } from '../common/pipes/id-validation/id-validation.pi
 import { FileInterceptor } from '@nestjs/platform-express';
 import { UploadImageService } from 'src/upload-image/upload-image.service';
 import { Public } from '../auth/decorators/public.decorator';
-import { Roles } from '../auth/decorators/roles.decorator';
-import { Role } from '../auth/enums/role.enum';
+import { RequirePermissions } from '../auth/decorators/permissions.decorator';
+import { Permission } from '../auth/enums/permission.enum';
 
 @Controller('products')
 export class ProductsController {
@@ -30,7 +30,7 @@ export class ProductsController {
   ) {}
 
   @Post()
-  @Roles(Role.ADMIN)
+  @RequirePermissions(Permission.CREATE_PRODUCT)
   create(@Body() createProductDto: CreateProductDto) {
     return this.productsService.create(createProductDto);
   }
@@ -52,7 +52,7 @@ export class ProductsController {
   }
 
   @Patch(':id')
-  @Roles(Role.ADMIN)
+  @RequirePermissions(Permission.EDIT_PRODUCT)
   update(
     @Param('id', IdValidationPipe) id: string,
     @Body() updateProductDto: UpdateProductDto,
@@ -61,13 +61,13 @@ export class ProductsController {
   }
 
   @Delete(':id')
-  @Roles(Role.ADMIN)
+  @RequirePermissions(Permission.DELETE_PRODUCT)
   remove(@Param('id', IdValidationPipe) id: string) {
     return this.productsService.remove(+id);
   }
 
   @Post('upload-image')
-  @Roles(Role.ADMIN)
+  @RequirePermissions(Permission.UPLOAD_IMAGE)
   @UseInterceptors(FileInterceptor('file'))
   uploadImage(@UploadedFile() file: Express.Multer.File) {
     if (!file) {
