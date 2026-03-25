@@ -14,33 +14,33 @@ import { CreateCouponDto } from './dto/create-coupon.dto';
 import { UpdateCouponDto } from './dto/update-coupon.dto';
 import { IdValidationPipe } from '../common/pipes/id-validation/id-validation.pipe';
 import { ApplyCouponDto } from './dto/apply-coupon.dto';
-import { Roles } from '../auth/decorators/roles.decorator';
-import { Role } from '../auth/enums/role.enum';
+import { RequirePermissions } from '../auth/decorators/permissions.decorator';
+import { Permission } from '../auth/enums/permission.enum';
 
 @Controller('coupons')
 export class CouponsController {
   constructor(private readonly couponsService: CouponsService) {}
 
   @Post()
-  @Roles(Role.ADMIN)
+  @RequirePermissions(Permission.CREATE_COUPON)
   create(@Body() createCouponDto: CreateCouponDto) {
     return this.couponsService.create(createCouponDto);
   }
 
   @Get()
-  @Roles(Role.ADMIN)
+  @RequirePermissions(Permission.VIEW_COUPONS)
   findAll() {
     return this.couponsService.findAll();
   }
 
   @Get(':id')
-  @Roles(Role.ADMIN)
+  @RequirePermissions(Permission.VIEW_COUPONS)
   findOne(@Param('id', IdValidationPipe) id: string) {
     return this.couponsService.findOne(+id);
   }
 
   @Patch(':id')
-  @Roles(Role.ADMIN)
+  @RequirePermissions(Permission.EDIT_COUPON)
   update(
     @Param('id', IdValidationPipe) id: string,
     @Body() updateCouponDto: UpdateCouponDto,
@@ -49,7 +49,7 @@ export class CouponsController {
   }
 
   @Delete(':id')
-  @Roles(Role.ADMIN)
+  @RequirePermissions(Permission.DELETE_COUPON)
   remove(@Param('id') id: string) {
     return this.couponsService.remove(+id);
   }
