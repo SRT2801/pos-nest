@@ -1,11 +1,13 @@
-import { Controller, Post, Body } from '@nestjs/common';
-import { AuthService } from './auth.service';
-import { SignUpDto } from './dto/sign-up.dto';
-import { SignInDto } from './dto/sign-in.dto';
-import { CreateAdminDto } from './dto/create-admin.dto';
-import { Public } from './decorators/public.decorator';
-import { Roles } from './decorators/roles.decorator';
-import { Role } from './enums/role.enum';
+import { Controller, Post, Body, Res, Req } from '@nestjs/common';
+import type { Response, Request } from 'express';
+import { AuthService } from './auth.service.js';
+import { SignUpDto } from './dto/sign-up.dto.js';
+import { SignInDto } from './dto/sign-in.dto.js';
+import { CreateMemberDto } from './dto/create-member.dto.js';
+import { RegisterStoreDto } from './dto/register-store.dto.js';
+import { Public } from './decorators/public.decorator.js';
+import { Roles } from './decorators/roles.decorator.js';
+import { Role } from './enums/role.enum.js';
 
 @Controller('auth')
 export class AuthController {
@@ -19,13 +21,31 @@ export class AuthController {
 
   @Post('signin')
   @Public()
-  signIn(@Body() signInDto: SignInDto) {
-    return this.authService.signIn(signInDto);
+  signIn(@Body() signInDto: SignInDto, @Res() res: Response) {
+    return this.authService.signIn(signInDto, res);
   }
 
-  @Post('create-admin')
-  @Roles(Role.ADMIN)
-  createAdmin(@Body() createAdminDto: CreateAdminDto) {
-    return this.authService.createAdmin(createAdminDto);
+  @Post('signout')
+  @Public()
+  signOut(@Res() res: Response) {
+    return this.authService.signOut(res);
+  }
+
+  @Post('refresh')
+  @Public()
+  refresh(@Res() res: Response, @Req() req: Request) {
+    return this.authService.refresh(res, req);
+  }
+
+  @Post('register-store')
+  @Public()
+  registerStore(@Body() registerStoreDto: RegisterStoreDto) {
+    return this.authService.registerStore(registerStoreDto);
+  }
+
+  @Post('create-member')
+  @Roles(Role.OWNER)
+  createMember(@Body() createMemberDto: CreateMemberDto) {
+    return this.authService.createMember(createMemberDto);
   }
 }
