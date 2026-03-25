@@ -2,7 +2,8 @@ import { NestFactory } from '@nestjs/core';
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { SupabaseAuthProvider } from './auth/supabase.provider';
-import { AuthService } from './auth/auth.service';
+import { SupabaseClient } from '@supabase/supabase-js';
+import { Role } from './auth/enums/role.enum';
 
 @Module({
   imports: [
@@ -10,7 +11,7 @@ import { AuthService } from './auth/auth.service';
       isGlobal: true,
     }),
   ],
-  providers: [SupabaseAuthProvider, AuthService],
+  providers: [SupabaseAuthProvider],
 })
 class SeedAdminModule {}
 
@@ -27,15 +28,25 @@ async function bootstrap() {
   }
 
   const app = await NestFactory.createApplicationContext(SeedAdminModule);
-  const authService = app.get(AuthService);
+  const supabase = app.get<SupabaseClient>('SUPABASE_AUTH');
 
   try {
-    const result = await authService.createAdmin({ email, password });
-    console.log('Primer usuario admin creado exitosamente:');
-    console.log(`  Email: ${result.user.email}`);
-    console.log(`  Role: ${result.user.role}`);
+    const { data, error } = await supabase.auth.admin.createUser({
+      email,
+      password,
+      app_metadata: { role: Role.SUPER_ADMIN },
+      email_confirm: true,
+    });
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    console.log('Super admin creado exitosamente:');
+    console.log(`  Email: ${data.user.email}`);
+    console.log(`  Role: super_admin`);
   } catch (error) {
-    console.error('Error al crear admin:', error.message);
+    console.error('Error al crear super admin:', error.message);
   } finally {
     await app.close();
   }
