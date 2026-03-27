@@ -51,8 +51,5 @@ export class AuthController {
     return this.authService.createMember(createMemberDto);
   }
 
-  @Get('me')
-  getProfile(@CurrentUser() user: AuthUser) {
-    return this.authService.getProfile(user);
-  }
+  
 }
