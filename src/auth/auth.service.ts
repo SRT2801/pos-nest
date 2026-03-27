@@ -15,7 +15,6 @@ import { RegisterStoreDto } from './dto/register-store.dto';
 import { StoreContextService } from '../common/cls/store-context.service';
 import type { Response, Request } from 'express';
 import { Res } from '@nestjs/common';
-import { AuthUser } from './interfaces/auth-user.interface.js';
 
 @Injectable()
 export class AuthService {
@@ -106,24 +105,13 @@ export class AuthService {
       user: {
         id: data.user.id,
         email: data.user.email,
-        globalRole: data.user.app_metadata?.role ?? Role.CUSTOMER,
       },
-      stores: storeUsers.map((su) => {
-        const isFullAdmin =
-          su.role === Role.OWNER ||
-          su.role === Role.ADMIN ||
-          su.role === Role.SUPER_ADMIN;
-
-        return {
-          id: su.storeId,
-          name: su.store.name,
-          slug: su.store.slug,
-          role: su.role,
-          permissions: isFullAdmin
-            ? ADMIN_DEFAULT_PERMISSIONS
-            : (su.permissions ?? []),
-        };
-      }),
+      stores: storeUsers.map((su) => ({
+        id: su.storeId,
+        name: su.store.name,
+        slug: su.store.slug,
+        role: su.role,
+      })),
     });
   }
 
@@ -175,48 +163,6 @@ export class AuthService {
     };
   }
 
-  async getProfile(user: AuthUser) {
-    const storeUsers = await this.storesService.findStoresForUser(user.id);
-
-    const stores = storeUsers.map((su) => {
-      const isFullAdmin =
-        su.role === Role.OWNER ||
-        su.role === Role.ADMIN ||
-        su.role === Role.SUPER_ADMIN;
-
-      return {
-        id: su.storeId,
-        name: su.store.name,
-        slug: su.store.slug,
-        role: su.role,
-        permissions: isFullAdmin
-          ? ADMIN_DEFAULT_PERMISSIONS
-          : (su.permissions ?? []),
-      };
-    });
-
-    const isCurrentFullAdmin =
-      user.role === Role.OWNER ||
-      user.role === Role.ADMIN ||
-      user.role === Role.SUPER_ADMIN;
-
-    return {
-      user: {
-        id: user.id,
-        email: user.email,
-        globalRole: user.app_metadata?.role ?? Role.CUSTOMER,
-      },
-      currentContext: {
-        storeId: user.storeId,
-        role: user.role,
-        permissions: isCurrentFullAdmin
-          ? ADMIN_DEFAULT_PERMISSIONS
-          : (user.permissions ?? []),
-      },
-      stores: stores,
-    };
-  }
-
   private async createUser(
     credentials: { email: string; password: string },
     role: Role,
@@ -245,11 +191,13 @@ export class AuthService {
   }
 
   async refresh(res: Response, req: Request) {
+    
     const refreshToken = req.cookies['refresh_token'];
     if (!refreshToken) {
       return res.status(401).json({ message: 'No refresh token provided' });
     }
 
+  
     const { data, error } = await this.supabase.auth.refreshSession({
       refresh_token: refreshToken,
     });
@@ -260,6 +208,7 @@ export class AuthService {
         .json({ message: 'Refresh token inválido o expirado' });
     }
 
+   
     res.cookie('access_token', data.session?.access_token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
