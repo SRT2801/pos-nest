@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Res, Req } from '@nestjs/common';
+import { Controller, Post, Body, Res, Req, Get } from '@nestjs/common';
 import type { Response, Request } from 'express';
 import { AuthService } from './auth.service.js';
 import { SignUpDto } from './dto/sign-up.dto.js';
@@ -7,7 +7,9 @@ import { CreateMemberDto } from './dto/create-member.dto.js';
 import { RegisterStoreDto } from './dto/register-store.dto.js';
 import { Public } from './decorators/public.decorator.js';
 import { Roles } from './decorators/roles.decorator.js';
+import { CurrentUser } from './decorators/current-user.decorator.js';
 import { Role } from './enums/role.enum.js';
+import { AuthUser } from './interfaces/auth-user.interface.js';
 
 @Controller('auth')
 export class AuthController {
@@ -47,5 +49,10 @@ export class AuthController {
   @Roles(Role.OWNER)
   createMember(@Body() createMemberDto: CreateMemberDto) {
     return this.authService.createMember(createMemberDto);
+  }
+
+  @Get('me')
+  getProfile(@CurrentUser() user: AuthUser) {
+    return this.authService.getProfile(user);
   }
 }
