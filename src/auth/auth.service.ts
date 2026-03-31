@@ -105,6 +105,7 @@ export class AuthService {
       user: {
         id: data.user.id,
         email: data.user.email,
+        globalRole: data.user.app_metadata?.role || Role.CUSTOMER,
       },
       stores: storeUsers.map((su) => ({
         id: su.storeId,
