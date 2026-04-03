@@ -61,6 +61,12 @@ export class CouponsService extends StoreScopedService<Coupon> {
     if (isAfter(currentDate, expirationDate)) {
       throw new UnprocessableEntityException('Coupon has expired');
     }
-    return { message: 'Coupon applied successfully', ...coupon };
+    return {
+      message: 'Coupon applied successfully',
+      coupon: {
+        name: coupon.name,
+        percentage: coupon.percentage,
+      },
+    };
   }
 }
