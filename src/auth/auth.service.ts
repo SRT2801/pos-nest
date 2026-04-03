@@ -13,6 +13,7 @@ import { ADMIN_DEFAULT_PERMISSIONS } from './enums/permission.enum.js';
 import { StoresService } from '../stores/stores.service';
 import { RegisterStoreDto } from './dto/register-store.dto';
 import { StoreContextService } from '../common/cls/store-context.service';
+import { AuthUser } from './interfaces/auth-user.interface.js';
 import type { Response, Request } from 'express';
 import { Res } from '@nestjs/common';
 
@@ -131,6 +132,42 @@ export class AuthService {
     return res.json({ message: 'Logout Successful' });
   }
 
+  async me(authUser: AuthUser) {
+    const storeUsers = await this.storesService.findStoresForUser(authUser.id);
+
+    const activePermissions = this.resolvePermissions(
+      authUser.role,
+      authUser.permissions,
+    );
+
+    return {
+      message: 'Session active',
+      user: {
+        id: authUser.id,
+        email: authUser.email,
+        globalRole: (authUser.app_metadata?.role as Role) || Role.CUSTOMER,
+        activeRole: authUser.role,
+        storeId: authUser.storeId,
+        permissions: activePermissions,
+      },
+      stores: storeUsers.map((su) => ({
+        id: su.storeId,
+        name: su.store.name,
+        slug: su.store.slug,
+        role: su.role,
+        permissions: this.resolvePermissions(su.role, su.permissions),
+      })),
+    };
+  }
+
+  private resolvePermissions(role: Role, permissions?: string[]) {
+    if (role === Role.OWNER || role === Role.ADMIN) {
+      return ADMIN_DEFAULT_PERMISSIONS;
+    }
+
+    return permissions ?? [];
+  }
+
   async registerStore(registerDto: RegisterStoreDto) {
     const { email, password, storeName, storeSlug } = registerDto;
 
@@ -192,13 +229,11 @@ export class AuthService {
   }
 
   async refresh(res: Response, req: Request) {
-    
     const refreshToken = req.cookies['refresh_token'];
     if (!refreshToken) {
       return res.status(401).json({ message: 'No refresh token provided' });
     }
 
-  
     const { data, error } = await this.supabase.auth.refreshSession({
       refresh_token: refreshToken,
     });
@@ -209,7 +244,6 @@ export class AuthService {
         .json({ message: 'Refresh token inválido o expirado' });
     }
 
-   
     res.cookie('access_token', data.session?.access_token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
