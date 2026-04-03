@@ -21,12 +21,12 @@ export class Product {
   description?: string;
 
   @Column({
-    type: 'varchar',
-    length: 255,
+    type: 'text',
+    array: true,
     nullable: true,
-    default: 'default.svg',
+    default: ['default.svg'],
   })
-  image: string;
+  images: string[];
 
   @Column({ type: 'decimal' })
   price: number;
