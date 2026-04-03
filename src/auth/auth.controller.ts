@@ -55,6 +55,4 @@ export class AuthController {
   me(@CurrentUser() user: AuthUser) {
     return this.authService.me(user);
   }
-
-  
 }
