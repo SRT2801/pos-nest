@@ -40,4 +40,8 @@ export class UploadImageService {
       path: fileName,
     };
   }
+
+  async uploadFiles(files: Express.Multer.File[]): Promise<UploadResponse[]> {
+    return Promise.all(files.map((file) => this.uploadFile(file)));
+  }
 }
