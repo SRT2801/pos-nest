@@ -17,6 +17,11 @@ export class SeederService {
   ) {}
 
   async seed() {
+    const env = process.env.NODE_ENV ?? 'development';
+    if (env === 'production') {
+      throw new Error('Seeding with database reset is disabled in production');
+    }
+
     const connection = this.dataSource;
     await connection.dropDatabase();
     await connection.synchronize();
@@ -34,7 +39,7 @@ export class SeederService {
       if (!category) continue;
       const product = new Product();
       product.name = seedProduct.name;
-      product.image = seedProduct.image;
+      product.images = [seedProduct.image];
       product.price = seedProduct.price;
       product.inventory = seedProduct.inventory;
       product.category = category;
