@@ -53,9 +53,9 @@ export class TransactionsService extends StoreScopedService<Transaction> {
           const coupon = await this.couponsService.applyCoupon(
             createTransactionDto.coupon,
           );
-          const discount = (coupon.percentage / 100) * total;
+          const discount = (coupon.coupon.percentage / 100) * total;
           transaction.discount = discount;
-          transaction.coupon = coupon.name;
+          transaction.coupon = coupon.coupon.name;
           transaction.total = total - discount;
         }
 
