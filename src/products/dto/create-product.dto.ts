@@ -1,9 +1,11 @@
 import {
+  IsArray,
   IsInt,
   IsNotEmpty,
   IsNumber,
   IsOptional,
   IsString,
+  Min,
   MaxLength,
 } from 'class-validator';
 
@@ -22,13 +24,17 @@ export class CreateProductDto {
     { maxDecimalPlaces: 2 },
     { message: 'The product price must be a number.' },
   )
+  @Min(0.01, { message: 'The product price must be greater than 0.' })
   price: number;
 
-  @IsNotEmpty({ message: 'The product image is required.' })
-  image: string;
+  @IsNotEmpty({ message: 'The product images are required.' })
+  @IsArray()
+  @IsString({ each: true, message: 'Each image must be a valid URL/string.' })
+  images: string[];
 
   @IsNotEmpty({ message: 'The quantity cannot be empty.' })
-  @IsNumber({ maxDecimalPlaces: 0 }, { message: 'invalid amount of inventory' })
+  @IsInt({ message: 'invalid amount of inventory' })
+  @Min(0, { message: 'Inventory cannot be negative.' })
   inventory: number;
 
   @IsNotEmpty({ message: 'The category ID is required.' })
